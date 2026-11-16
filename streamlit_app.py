@@ -104,7 +104,7 @@ if st.button("Generate Report"):
             # Read summary stats by label search — robust to row shifts
             assigned_value     = find_value_by_label(ws_pt, "Assigned Value")
             assigned_u         = find_value_by_label(ws_pt, "Assigned u")
-            assigned_U         = find_value_by_label(ws_pt, "Assigned U")
+            assigned_U = find_value_by_label(ws_pt, "Assigned U")
             standard_deviation = find_value_by_label(ws_pt, "Target SD")
             arithmetic_mean    = find_value_by_label(ws_rs, "Mean")
 
@@ -115,7 +115,7 @@ if st.button("Generate Report"):
             missing = []
             if assigned_value     is None: missing.append("Assigned Value")
             if assigned_u         is None: missing.append("Assigned u")
-            if assigned_U         is None: missing.append("Assigned U")
+            if assigned_U is None: missing.append("Assigned U")
             if standard_deviation is None: missing.append("Target SD")
             if arithmetic_mean    is None: missing.append("Mean (Robust Statistics sheet)")
             if len(labs) == 0:             missing.append("Lab results table")
@@ -133,7 +133,7 @@ if st.button("Generate Report"):
                     "coordinator_name":   coordinator_name,
                     "assigned_value":     f"{assigned_value:.5f}",
                     "assigned_u":         f"{assigned_u:.5f}",
-                    "assigned_U":         f"{assigned_U:.5f}",
+                    "assigned_U_expanded": f"{assigned_U:.5f}",
                     "arithmetic_mean":    f"{arithmetic_mean:.5f}",
                     "standard_deviation": f"{standard_deviation:.6f}",
                     "lab_rows":           labs,  # for table loop (future use)
