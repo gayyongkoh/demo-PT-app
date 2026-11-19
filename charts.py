@@ -65,16 +65,16 @@ def result_chart(lab_codes, results, lab_U, av, av_plus, av_minus, mean,
     ax.fill_between([x0, x1], av_minus, av_plus, color="#8C9ED9", alpha=0.8,
                     linewidth=0, zorder=1)
     for y in (av_plus, av_minus):
-        ax.hlines(y, x0, x1, color="#2B3A8C", linewidth=0.6, zorder=2)
+        ax.hlines(y, x0, x1, color="#2B3A8C", linewidth=1, zorder=2)
 
     # Assigned value (thick) and arithmetic mean (red)
-    ax.hlines(av, x0, x1, color="black", linewidth=2, zorder=2)
+    ax.hlines(av, x0, x1, color="black", linewidth=1.25, zorder=2)
     if mean is not None:
         ax.hlines(mean, x0, x1, color="#D93A1F", linewidth=1, zorder=2)
 
     # Lab results with error bars
     ax.errorbar(x, results, yerr=errs, fmt="s", color="black", markersize=5,
-                ecolor="black", elinewidth=0.8, capsize=2.5, zorder=4)
+                ecolor="black", elinewidth=0.6, capsize=2.5, capthick=0.6, zorder=4)
 
     # Y range follows the data; extra room at the bottom for the legend
     lows  = [r - e for r, e in zip(results, errs_num)] + [av_minus] + ([mean] if mean is not None else [])
@@ -99,7 +99,7 @@ def result_chart(lab_codes, results, lab_U, av, av_plus, av_minus, mean,
     ax.set_ylabel(ylabel, fontsize=9)
 
     legend_items = [
-        Line2D([0], [0], color="black", linewidth=2),
+        Line2D([0], [0], color="black", linewidth=1.25),
         Patch(facecolor="#8C9ED9", edgecolor="#2B3A8C", linewidth=0.6),
         Line2D([0], [0], color="#D93A1F", linewidth=1),
     ]
