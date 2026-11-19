@@ -1,6 +1,8 @@
 import streamlit as st
 import openpyxl
-from docxtpl import DocxTemplate
+from docxtpl import DocxTemplate, InlineImage
+from docx.shared import Mm
+from charts import score_chart
 from io import BytesIO
 
 # ── PAGE CONFIG ───────────────────────────────────────────────────────────────
@@ -60,6 +62,8 @@ def get_lab_results(ws):
             "std_u":      f"{std_u:.3f}"     if std_u     is not None else "Not reported",
             "z_score":    f"{z_score:.1f}"   if z_score   is not None else "—",
             "zeta_score": f"{zeta_score:.1f}" if zeta_score is not None else "Not applicable",
+            "z_raw":      z_score,      # NEW, for chart plotting
+            "zeta_raw":   zeta_score,   # NEW, for chart plotting
         })
 
     # Re-sort by lab code ascending for the Word report
@@ -142,6 +146,28 @@ if st.button("Generate Report"):
 
                 # ── RENDER WORD TEMPLATE ──────────────────────────────────────
                 doc = DocxTemplate(word_template)
+
+                # ── CHARTS ────────────────────────────────────────────────
+                z_pts    = [(l["lab_code"], l["z_raw"])    for l in labs
+                            if isinstance(l["z_raw"], (int, float))]
+                zeta_pts = [(l["lab_code"], l["zeta_raw"]) for l in labs
+                            if isinstance(l["zeta_raw"], (int, float))]
+
+                if z_pts:
+                    codes, vals = zip(*z_pts)
+                    context["z_chart_1"] = InlineImage(
+                        doc, score_chart(codes, vals, "z-Scores"), width=Mm(140))
+                else:
+                    context["z_chart_1"] = "No z-scores available"
+
+                if zeta_pts:
+                    codes, vals = zip(*zeta_pts)
+                    context["zeta_chart_1"] = InlineImage(
+                        doc, score_chart(codes, vals, "ζ-Scores"), width=Mm(140))
+                else:
+                    context["zeta_chart_1"] = "No ζ-scores available"
+                # End of inserted chart codes
+
                 doc.render(context)
 
                 #print(doc.get_undeclared_template_variables())
