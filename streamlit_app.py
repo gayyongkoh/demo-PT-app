@@ -2,7 +2,7 @@ import streamlit as st
 import openpyxl
 from docxtpl import DocxTemplate, InlineImage
 from docx.shared import Mm
-from charts import score_chart
+from charts import score_chart, result_chart
 from io import BytesIO
 
 # ── PAGE CONFIG ───────────────────────────────────────────────────────────────
@@ -70,6 +70,34 @@ def get_lab_results(ws):
     labs.sort(key=lambda x: int(x["lab_code"]))
     return labs
 
+def get_comparison_data(ws):
+    header_row = header_col = None
+    for row in ws.iter_rows():
+        for cell in row:
+            if cell.value and str(cell.value).strip() == "Data ID or Lab Code":
+                header_row, header_col = cell.row, cell.column
+                break
+        if header_row:
+            break
+    if not header_row:
+        raise ValueError("Could not find 'Data ID or Lab Code' header in Comparison of Results sheet.")
+
+    rows = []
+    for r in range(header_row + 1, ws.max_row + 1):
+        g = lambda off: ws.cell(row=r, column=header_col + off).value
+        code = g(0)
+        if code is None or str(code).strip() == "":
+            break
+        if not isinstance(g(4), (int, float)):
+            continue
+        rows.append({
+            "lab_code": str(int(code)) if isinstance(code, float) else str(code),
+            "av": g(1), "u": g(2), "U": g(3),
+            "result": g(4),
+            "lab_u": g(5),
+            "lab_U": g(6),    # "Lab reported U", used for the error bars
+        })
+    return rows
 
 # ── STEP 1: FILE UPLOADS ──────────────────────────────────────────────────────
 st.markdown("### Step 1: Upload Files")
@@ -153,19 +181,45 @@ if st.button("Generate Report"):
                 zeta_pts = [(l["lab_code"], l["zeta_raw"]) for l in labs
                             if isinstance(l["zeta_raw"], (int, float))]
 
+                # Each chart sorted by its own score, ascending (table order unaffected)
+                z_pts.sort(key=lambda p: p[1])
+                zeta_pts.sort(key=lambda p: p[1])
+
                 if z_pts:
                     codes, vals = zip(*z_pts)
                     context["z_chart_1"] = InlineImage(
-                        doc, score_chart(codes, vals, "z-Scores"), width=Mm(140))
+                        doc, score_chart(codes, vals, "z-Scores"), width=Mm(78))
                 else:
                     context["z_chart_1"] = "No z-scores available"
 
                 if zeta_pts:
                     codes, vals = zip(*zeta_pts)
                     context["zeta_chart_1"] = InlineImage(
-                        doc, score_chart(codes, vals, "ζ-Scores"), width=Mm(140))
+                        doc, score_chart(codes, vals, "ζ-Scores"), width=Mm(78))
                 else:
                     context["zeta_chart_1"] = "No ζ-scores available"
+
+                # Lab results chart (Comparison of Results tab)
+                ws_cmp = wb["Comparison of Results"]
+                cmp_rows = get_comparison_data(ws_cmp)
+                cmp_rows.sort(key=lambda r: r["result"])      # ascending by result
+
+                if cmp_rows and cmp_rows[0]["av"] is not None and cmp_rows[0]["U"] is not None:
+                    av = cmp_rows[0]["av"]
+                    U  = cmp_rows[0]["U"]
+                    context["result_chart_1"] = InlineImage(
+                        doc,
+                        result_chart(
+                            [r["lab_code"] for r in cmp_rows],
+                            [r["result"] for r in cmp_rows],
+                            [r["lab_U"] for r in cmp_rows],
+                            av, av + U, av - U, arithmetic_mean,
+                            f"Mass fraction of {test_analyte_1} (mg/kg)",
+                        ),
+                        width=Mm(160),
+                    )
+                else:
+                    context["result_chart_1"] = "No results available"
                 # End of inserted chart codes
 
                 doc.render(context)
@@ -189,6 +243,6 @@ if st.button("Generate Report"):
 
         except KeyError as e:
             st.error(f"Sheet not found in Excel file: {e}. "
-                     f"Expected sheets named 'PT Scores' and 'Robust Statistics'.")
+                     f"Expected sheets named 'PT Scores', 'Robust Statistics' and 'Comparison of Results'.")
         except Exception as e:
             st.error(f"Something went wrong: {e}")
