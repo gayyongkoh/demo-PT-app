@@ -25,7 +25,10 @@ def score_chart(lab_codes, scores, ylabel, ylim=4):
 
     ax.set_xlim(-0.5, n - 0.5)
     ax.set_ylim(-ylim, ylim)
-    ax.set_yticks([-ylim, 0, ylim])
+#    ax.set_yticks([-ylim, 0, ylim])
+    ax.set_yticks(range(-ylim, ylim + 1))          # ticks at -4, -3, ... 3, 4
+    ax.yaxis.grid(True, color="#BBBBBB", linewidth=0.6)
+    ax.set_axisbelow(True)                          # draw grid behind the bars
     ax.set_xticks(x)
     ax.set_xticklabels([str(c) for c in lab_codes])
     ax.tick_params(axis="x", length=0)
